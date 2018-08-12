@@ -7,23 +7,26 @@ import os
 import threading
 import time
 import zwoasi as asi
+import json
 
 HOST_ADDRESS = '0.0.0.0'
 HOST_PORT = 10000
 
 # CCD global variables
-exp_time = 1000 # microseconds
-gain = 150 # range 0-300
+exp_time = 500 # microseconds
+gain = 100 # range 0-300
 
 class CameraHandler():
     
     def __init__(self, camera):
         self.camera = camera
 
-    def Capture(self, exposure_time, gain_value):
+    def FakeCapture(self, exposure_time, gain_value):
         # example data
-        #data = numpy.array(numpy.random.random((960,1280))*100,dtype=numpy.uint8)
-        #return data
+        data = numpy.array(numpy.random.random((960,1280))*100,dtype=numpy.uint8)
+        return data
+
+    def Capture(self, exposure_time, gain_value):
 
         # Use minimum USB bandwidth permitted
         self.camera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, self.camera.get_controls()['BandWidth']['MinValue'])
@@ -35,7 +38,7 @@ class CameraHandler():
         self.camera.set_control_value(asi.ASI_GAMMA, 50)
         self.camera.set_control_value(asi.ASI_BRIGHTNESS, 50)
         self.camera.set_control_value(asi.ASI_FLIP, 0)
-        self.camera.set_roi(bins=2)
+        #self.camera.set_roi(bins=2)
         self.camera.set_image_type(asi.ASI_IMG_RAW8)
 
         try:
@@ -51,26 +54,27 @@ class CameraHandler():
 
 
 def readCaptureParams():
-
     global exp_time
     global gain
-    return
-    while True:
-        data = conn.recv(1024)
-        print(data)
-
+    data = conn.recv(4096)
+    if data:
+        print data
+        params = json.loads(data)
+        exp_time = params['exp_time']
+        gain = params['gain']
 
 def captureAndSend(camera):
 
     ccd = CameraHandler(camera)
-
+    print(exp_time, gain)
     image = ccd.Capture(exp_time, gain);
+    #image = ccd.FakeCapture(exp_time, gain);
     print image
     im_bytes = image.tobytes()
 
     chunk_size = 1024
     msg_len = len(im_bytes)
-    print msg_len
+    #print msg_len
 
     for i in xrange((msg_len/chunk_size)+1):
         start = i * chunk_size
@@ -88,12 +92,12 @@ if __name__ == "__main__":
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    #sock.setblocking(0)
+    sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
     sock.bind((HOST_ADDRESS, HOST_PORT))
     sock.listen(2)
 
+    conn, addr = sock.accept()
     while True:
-        conn, addr = sock.accept()
         thread1 = threading.Thread( target=readCaptureParams, args=() )
         thread2 = threading.Thread( target=captureAndSend, args=(camera0,) )
 
@@ -102,8 +106,6 @@ if __name__ == "__main__":
 
         thread1.join()
         thread2.join()
-        break
-
 
     sock.close()
 
