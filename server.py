@@ -96,8 +96,8 @@ if __name__ == "__main__":
     sock.bind((HOST_ADDRESS, HOST_PORT))
     sock.listen(2)
 
-    conn, addr = sock.accept()
     while True:
+        conn, addr = sock.accept()
         thread1 = threading.Thread( target=readCaptureParams, args=() )
         thread2 = threading.Thread( target=captureAndSend, args=(camera0,) )
 
@@ -106,6 +106,8 @@ if __name__ == "__main__":
 
         thread1.join()
         thread2.join()
+
+        conn.close()
 
     sock.close()
 

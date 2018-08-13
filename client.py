@@ -11,8 +11,6 @@ HOST_ADDRESS = '192.168.10.44'
 #HOST_ADDRESS = 'localhost'
 HOST_PORT = 10000
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
 
 def sendCaptureParams():
     print('Send params')
@@ -42,9 +40,11 @@ def receiveImage(connection):
     array = np.frombuffer(arr, dtype=np.dtype(np.uint8)).reshape((960,1280))
     print array
 
-sock.connect((HOST_ADDRESS, HOST_PORT))
 
 while True:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+    sock.connect((HOST_ADDRESS, HOST_PORT))
     th1 = threading.Thread( target=sendCaptureParams, args=() )
     th2 = threading.Thread( target=receiveImage, args=(sock,) )
 
@@ -54,5 +54,5 @@ while True:
     th1.join()
     th2.join()
 
-sock.close()
+    sock.close()
 
