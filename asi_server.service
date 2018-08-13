@@ -1,0 +1,11 @@
+[Unit]
+Description=ZWO ASI120MM raspberry server
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/asi_server.py
+ExecStop=killall pythton
+Restart=Always
+
+[Install]
+WantedBy=default.target
