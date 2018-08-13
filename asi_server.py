@@ -8,7 +8,13 @@ import threading
 import time
 import zwoasi as asi
 import json
+from syslog import *
 
+# exit codes
+EC_CAMERA_NOT_FOUND = 100
+EC_GENERIC_ERROR = 110
+
+# network params
 HOST_ADDRESS = '0.0.0.0'
 HOST_PORT = 10000
 
@@ -69,7 +75,6 @@ def captureAndSend(camera):
     print(exp_time, gain)
     image = ccd.Capture(exp_time, gain);
     #image = ccd.FakeCapture(exp_time, gain);
-    print image
     im_bytes = image.tobytes()
 
     chunk_size = 1024
@@ -84,30 +89,45 @@ def captureAndSend(camera):
         conn.sendall(im_bytes[start:end])
 
 if __name__ == "__main__":
+    
+    syslog(LOG_INFO, 'Start server')
 
     libasi_path = '/opt/ASI_SDK/lib/armv7/libASICamera2.so'
     asi.init(libasi_path)
 
-    camera0 = asi.Camera(0)
+    try:
+        camera0 = asi.Camera(0)
+        syslog(LOG_INFO, 'Camera found')
+    except:
+        syslog(LOG_ERR, 'Camera not found')
+        sys.exit(EC_CAMERA_NOT_FOUND)
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-    sock.bind((HOST_ADDRESS, HOST_PORT))
-    sock.listen(2)
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+        sock.bind((HOST_ADDRESS, HOST_PORT))
+        sock.listen(2)
+        
+        syslog(LOG_INFO, 'Waiting connections...')
 
-    while True:
-        conn, addr = sock.accept()
-        thread1 = threading.Thread( target=readCaptureParams, args=() )
-        thread2 = threading.Thread( target=captureAndSend, args=(camera0,) )
+        while True:
+            conn, addr = sock.accept()
+            thread1 = threading.Thread( target=readCaptureParams, args=() )
+            thread2 = threading.Thread( target=captureAndSend, args=(camera0,) )
 
-        thread1.start()
-        thread2.start()
+            thread1.start()
+            thread2.start()
 
-        thread1.join()
-        thread2.join()
+            thread1.join()
+            thread2.join()
 
-        conn.close()
+            conn.close()
+
+    except:
+        sock.close()
+        syslog(LOG_ERR, 'Generic error')
+        sys.exit(EC_GENERIC_ERROR)
 
     sock.close()
 
