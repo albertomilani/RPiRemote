@@ -64,7 +64,7 @@ def readCaptureParams():
     global gain
     data = conn.recv(4096)
     if data:
-        print data
+        #print data
         params = json.loads(data)
         exp_time = params['exp_time']
         gain = params['gain']
@@ -72,7 +72,7 @@ def readCaptureParams():
 def captureAndSend(camera):
 
     ccd = CameraHandler(camera)
-    print(exp_time, gain)
+    #print(exp_time, gain)
     image = ccd.Capture(exp_time, gain);
     #image = ccd.FakeCapture(exp_time, gain);
     im_bytes = image.tobytes()
