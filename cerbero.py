@@ -10,16 +10,19 @@ import socket
 import sys
 import json
 from PIL import Image, ImageTk
+import traceback
+
+#CONFIG_FILE = '/home/osservatorio/cerbero.conf'
+CONFIG_FILE = './cerbero.conf'
 
 # ASI config
-
-ASI1_ADDRESS = '192.168.10.44'
+ASI1_ADDRESS = '192.168.40.195'
 ASI1_PORT = 10000
 ASI1_X = 1280
 ASI1_Y = 960
 ASI1_IMG_SIZE = ASI1_X * ASI1_Y
 
-ASI2_ADDRESS = 'localhost'
+ASI2_ADDRESS = '192.168.10.44'
 ASI2_PORT = 10000
 ASI2_X = 1280
 ASI2_Y = 960
@@ -31,42 +34,67 @@ ASI3_X = 1280
 ASI3_Y = 960
 ASI3_IMG_SIZE = ASI3_X * ASI3_Y
 
+# millisec
+MIN_EXP_TIME = 1
+MAX_EXP_TIME = 3000
+DEFAULT_EXP_TIME = 2
+
+SOCKET_TIMEOUT = 30
 
 class GuiPart:
     def __init__(self, master, queue, endCommand):
+
+        with open(CONFIG_FILE) as f:
+            self.config = json.load(f)
+
         self.master = master
         self.queue = queue
 
         self.master.title("Telecamere terza cupola")
         self.master.geometry("1800x600")
 
-        self.canvas1 = Tkinter.Canvas(self.master, width=600, height=450, background='red')
+        self.canvas1 = Tkinter.Canvas(self.master, width=600, height=450)
         self.canvas1.grid(row=0, column=0)
 
-        self.canvas2 = Tkinter.Canvas(self.master, width=600, height=450, background='red')
+        self.canvas2 = Tkinter.Canvas(self.master, width=600, height=450)
         self.canvas2.grid(row=0, column=1)
 
-        self.canvas3 = Tkinter.Canvas(self.master, width=600, height=450, background='red')
+        self.canvas3 = Tkinter.Canvas(self.master, width=600, height=450)
         self.canvas3.grid(row=0, column=2)
 
-        self.slider_exp1 = Tkinter.Scale(self.master, from_=100, to=10000, length=400, orient=Tkinter.HORIZONTAL, variable=exp_time1, label='Exp time')
-        self.slider_exp1.set(2000)
+        self.slider_exp1 = Tkinter.Scale(self.master, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, length=400, orient=Tkinter.HORIZONTAL, variable=exp_time1, label='Exp time (ms)')
+        self.slider_exp1.set(DEFAULT_EXP_TIME)
         self.slider_exp1.grid(row=1, column=0)
        
         self.slider_gain1 = Tkinter.Scale(self.master, from_=0, to=300, length=400, orient=Tkinter.HORIZONTAL, variable=gain1, label='Gain')
         self.slider_gain1.set(150)
         self.slider_gain1.grid(row=2, column=0)
 
-        self.slider_exp2 = Tkinter.Scale(self.master, from_=100, to=10000, length=400, orient=Tkinter.HORIZONTAL, variable=exp_time2, label='Exp time')
-        self.slider_exp2.set(2000)
+        self.slider_exp2 = Tkinter.Scale(self.master, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, length=400, orient=Tkinter.HORIZONTAL, variable=exp_time2, label='Exp time (ms)')
+        self.slider_exp2.set(DEFAULT_EXP_TIME)
         self.slider_exp2.grid(row=1, column=1)
        
         self.slider_gain2 = Tkinter.Scale(self.master, from_=0, to=300, length=400, orient=Tkinter.HORIZONTAL, variable=gain2, label='Gain')
         self.slider_gain2.set(150)
         self.slider_gain2.grid(row=2, column=1)
 
-        self.slider_exp3 = Tkinter.Scale(self.master, from_=100, to=10000, length=400, orient=Tkinter.HORIZONTAL, variable=exp_time3, label='Exp time')
-        self.slider_exp3.set(2000)
+        self.frame2 = Tkinter.Frame(self.master)
+        self.frame2.grid(row=3, column=1)
+
+        self.crosshair_x_label = Tkinter.Label(self.frame2, text='Crosshair: x')
+        self.crosshair_x_label.grid(row=0, column=0)
+        self.crosshair_x = Tkinter.Entry(self.frame2)
+        self.crosshair_x.insert(0, self.config['crosshair'][0])
+        self.crosshair_x.grid(row=0, column=1)
+
+        self.crosshair_y_label = Tkinter.Label(self.frame2, text='y')
+        self.crosshair_y_label.grid(row=0, column=2)
+        self.crosshair_y = Tkinter.Entry(self.frame2)
+        self.crosshair_y.insert(0, self.config['crosshair'][1])
+        self.crosshair_y.grid(row=0, column=3)
+
+        self.slider_exp3 = Tkinter.Scale(self.master, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, length=400, orient=Tkinter.HORIZONTAL, variable=exp_time3, label='Exp time (ms)')
+        self.slider_exp3.set(DEFAULT_EXP_TIME)
         self.slider_exp3.grid(row=1, column=2)
        
         self.slider_gain3 = Tkinter.Scale(self.master, from_=0, to=300, length=400, orient=Tkinter.HORIZONTAL, variable=gain3, label='Gain')
@@ -101,6 +129,22 @@ class GuiPart:
                     self.photo2 = ImageTk.PhotoImage(image=self.im2)
                     self.canvas2.delete('all')
                     self.canvas2_image = self.canvas2.create_image(0,0,image=self.photo2,anchor=Tkinter.NW)
+
+                    # draw crosshair
+                    x = int(self.crosshair_x.get())
+                    y = int(self.crosshair_y.get())
+                    
+                    self.canvas2.create_line(x, 0, x, y-10, fill='red', width=1)
+                    self.canvas2.create_line(x, y+10, x, 450, fill='red', width=1)
+
+                    self.canvas2.create_line(0, y, x-10, y, fill='red', width=1)
+                    self.canvas2.create_line(x+10, y, 600, y, fill='red', width=1)
+
+                    self.config['crosshair'][0] = self.crosshair_x.get()
+                    self.config['crosshair'][1] = self.crosshair_y.get()
+
+                    with open(CONFIG_FILE, 'w') as f:
+                        json.dump(self.config, f)
 
                 if self.data_id == 3:
                     if self.canvas3_image is not None:
@@ -155,26 +199,27 @@ class ThreadedClient:
 
             # send capture parameters
             params = {}
-            params['exp_time'] = exp_time1.get()
+            params['exp_time'] = 1000*exp_time1.get()
             params['gain'] = gain1.get()
             sock.sendall(json.dumps(params))
 
             # receive capture
             arr = b''
-            max_time = 2 #seconds
             time_start = time.time()
-
-            while len(arr) < ASI1_IMG_SIZE:
-                now = time.time()
-                if (now - time_start) > max_time:
-                    break
-                data  = sock.recv(2**16)
-                if data:
-                    arr += data
-            image_array = np.frombuffer(arr, dtype=np.dtype(np.uint8)).reshape((ASI1_Y,ASI1_X))
-            sock.close()
-            msg = {'id':1, 'image':image_array}
-            self.queue.put(msg)
+            try:
+                while len(arr) < ASI1_IMG_SIZE:
+                    now = time.time()
+                    if (now - time_start) > SOCKET_TIMEOUT:
+                        break
+                    data  = sock.recv(2**16)
+                    if data:
+                        arr += data
+                image_array = np.frombuffer(arr, dtype=np.dtype(np.uint8)).reshape((ASI1_Y,ASI1_X))
+                sock.close()
+                msg = {'id':1, 'image':image_array}
+                self.queue.put(msg)
+            except:
+                pass
 
     def workerThread2(self):
         while self.running:
@@ -184,26 +229,28 @@ class ThreadedClient:
 
             # send capture parameters
             params = {}
-            params['exp_time'] = exp_time2.get()
+            params['exp_time'] = 1000*exp_time2.get()
             params['gain'] = gain2.get()
             sock.sendall(json.dumps(params))
 
             # receive capture
             arr = b''
-            max_time = 2 #seconds
             time_start = time.time()
-
-            while len(arr) < ASI2_IMG_SIZE:
-                now = time.time()
-                if (now - time_start) > max_time:
-                    break
-                data  = sock.recv(2**16)
-                if data:
-                    arr += data
-            image_array = np.frombuffer(arr, dtype=np.dtype(np.uint8)).reshape((ASI2_Y,ASI2_X))
-            sock.close()
-            msg = {'id':2, 'image':image_array}
-            self.queue.put(msg)
+            try:
+                while len(arr) < ASI2_IMG_SIZE:
+                    now = time.time()
+                    if (now - time_start) > SOCKET_TIMEOUT:
+                        break
+                    data  = sock.recv(2**16)
+                    if data:
+                        arr += data
+                image_array = np.frombuffer(arr, dtype=np.dtype(np.uint8)).reshape((ASI2_Y,ASI2_X))
+                sock.close()
+                msg = {'id':2, 'image':image_array}
+                self.queue.put(msg)
+            except:
+                traceback.print_exc()
+                pass
 
     def workerThread3(self):
         while self.running:
@@ -213,18 +260,17 @@ class ThreadedClient:
 
             # send capture parameters
             params = {}
-            params['exp_time'] = exp_time3.get()
+            params['exp_time'] = 1000*exp_time3.get()
             params['gain'] = gain3.get()
             sock.sendall(json.dumps(params))
 
             # receive capture
             arr = b''
-            max_time = 2 #seconds
             time_start = time.time()
 
             while len(arr) < ASI3_IMG_SIZE:
                 now = time.time()
-                if (now - time_start) > max_time:
+                if (now - time_start) > SOCKET_TIMEOUT:
                     break
                 data  = sock.recv(2**16)
                 if data:
