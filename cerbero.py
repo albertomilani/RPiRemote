@@ -116,6 +116,8 @@ class GuiPart:
         self.master.title("Telecamere terza cupola")
         self.master.geometry("1807x650")
 
+        self.master.protocol("WM_DELETE_WINDOW", endCommand)
+
         self.canvas1 = Tkinter.Canvas(self.master, width=600, height=450)
         self.canvas1.grid(row=0, column=0)
 
@@ -186,7 +188,6 @@ class GuiPart:
         else:
             label.config(text='OFF')
             label.config(background='red')
-
 
     def processIncoming(self):
         while self.queue.qsize():
