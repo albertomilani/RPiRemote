@@ -23,13 +23,13 @@ ASI_X = {}
 ASI_Y = {}
 ASI_IMG_SIZE = {}
 
-ASI_ADDRESS[1] = '192.168.40.123'
+ASI_ADDRESS[1] = '192.168.40.122'
 ASI_PORT[1] = 10000
 ASI_X[1] = 1280
 ASI_Y[1] = 960
 ASI_IMG_SIZE[1] = ASI_X[1] * ASI_Y[1]
 
-ASI_ADDRESS[2] = '192.168.40.122'
+ASI_ADDRESS[2] = '192.168.40.123'
 ASI_PORT[2] = 10000
 ASI_X[2] = 1280
 ASI_Y[2] = 960
@@ -44,7 +44,7 @@ ASI_IMG_SIZE[3] = ASI_X[3] * ASI_Y[3]
 # millisec
 MIN_EXP_TIME = 1
 MAX_EXP_TIME = 15000
-DEFAULT_EXP_TIME = 2
+DEFAULT_EXP_TIME = 20
 
 SOCKET_TIMEOUT = 20
 
@@ -114,37 +114,47 @@ class GuiPart:
         self.relay_queue = relay_queue
 
         self.master.title("Telecamere terza cupola")
-        self.master.geometry("1807x650")
+        self.master.geometry("1650x940")
 
         self.master.protocol("WM_DELETE_WINDOW", endCommand)
 
-        self.canvas1 = Tkinter.Canvas(self.master, width=600, height=450)
-        self.canvas1.grid(row=0, column=0)
 
-        self.canvas2 = Tkinter.Canvas(self.master, width=600, height=450)
-        self.canvas2.grid(row=0, column=1)
+        self.frame_w = Tkinter.Frame(self.master)
+        self.frame_w.grid(row=0, column=0, rowspan=2, sticky="NW")
+        self.frame_ne = Tkinter.Frame(self.master)
+        self.frame_ne.grid(row=0, column=1, sticky="NE")
+        self.frame_se = Tkinter.Frame(self.master)
+        self.frame_se.grid(row=1, column=1, sticky="SE")
 
-        self.canvas3 = Tkinter.Canvas(self.master, width=600, height=450)
-        self.canvas3.grid(row=0, column=2)
 
-        self.slider_exp1 = Tkinter.Scale(self.master, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time[1], label='Exp time (ms)')
+        self.canvas1 = Tkinter.Canvas(self.frame_ne, width=600, height=450)
+        self.canvas1.grid(row=0, column=0, rowspan=2, sticky="N")
+
+        Tkinter.Label(self.frame_ne, text='Exp time (ms)').grid(row=0, column=1)
+        self.slider_exp1 = Tkinter.Scale(self.frame_ne, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=400, variable=exp_time[1])
         self.slider_exp1.set(DEFAULT_EXP_TIME)
-        self.slider_exp1.grid(row=1, column=0)
+        self.slider_exp1.grid(row=1, column=1)
        
-        self.slider_gain1 = Tkinter.Scale(self.master, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain[1], label='Gain')
+        Tkinter.Label(self.frame_ne, text='Gain').grid(row=0, column=2)
+        self.slider_gain1 = Tkinter.Scale(self.frame_ne, from_=0, to=300, length=400, variable=gain[1])
         self.slider_gain1.set(150)
-        self.slider_gain1.grid(row=2, column=0)
+        self.slider_gain1.grid(row=1, column=2)
 
-        self.slider_exp2 = Tkinter.Scale(self.master, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time[2], label='Exp time (ms)')
+
+
+        self.canvas2 = Tkinter.Canvas(self.frame_w, width=853, height=640)
+        self.canvas2.grid(row=0, column=0, sticky="N")
+
+        self.slider_exp2 = Tkinter.Scale(self.frame_w, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time[2], label='Exp time (ms)')
         self.slider_exp2.set(DEFAULT_EXP_TIME)
-        self.slider_exp2.grid(row=1, column=1)
+        self.slider_exp2.grid(row=1, column=0)
        
-        self.slider_gain2 = Tkinter.Scale(self.master, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain[2], label='Gain')
+        self.slider_gain2 = Tkinter.Scale(self.frame_w, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain[2], label='Gain')
         self.slider_gain2.set(150)
-        self.slider_gain2.grid(row=2, column=1)
+        self.slider_gain2.grid(row=2, column=0)
 
-        self.frame2 = Tkinter.Frame(self.master)
-        self.frame2.grid(row=3, column=1)
+        self.frame2 = Tkinter.Frame(self.frame_w)
+        self.frame2.grid(row=3, column=0)
 
         self.crosshair_x_label = Tkinter.Label(self.frame2, text='Crosshair: x')
         self.crosshair_x_label.grid(row=0, column=0, sticky="W")
@@ -158,14 +168,6 @@ class GuiPart:
         self.crosshair_y.insert(0, self.config['crosshair'][1])
         self.crosshair_y.grid(row=0, column=3, sticky="W")
 
-        self.slider_exp3 = Tkinter.Scale(self.master, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time[3], label='Exp time (ms)')
-        self.slider_exp3.set(DEFAULT_EXP_TIME)
-        self.slider_exp3.grid(row=1, column=2)
-       
-        self.slider_gain3 = Tkinter.Scale(self.master, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain[3], label='Gain')
-        self.slider_gain3.set(150)
-        self.slider_gain3.grid(row=2, column=2)
-
         self.thLampStatus = False
         self.thLampSwitchOn = Tkinter.Button(self.frame2, text="4-20mA switch ON", command= lambda: self.switchLamp(True))
         self.thLampSwitchOn.grid(row=1, column=0)
@@ -173,6 +175,21 @@ class GuiPart:
         self.thLampSwitchOff.grid(row=1, column=1)
         self.thLampSwitchStatus = Tkinter.Label(self.frame2, text="OFF", background='red', width=5)
         self.thLampSwitchStatus.grid(row=1, column=2)
+
+
+
+        self.canvas3 = Tkinter.Canvas(self.frame_se, width=600, height=450)
+        self.canvas3.grid(row=0, column=0, rowspan=2, sticky="N")
+
+        Tkinter.Label(self.frame_se, text='Exp time (ms)').grid(row=0, column=1)
+        self.slider_exp3 = Tkinter.Scale(self.frame_se, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=400, variable=exp_time[3])
+        self.slider_exp3.set(DEFAULT_EXP_TIME)
+        self.slider_exp3.grid(row=1, column=1)
+
+        Tkinter.Label(self.frame_se, text='Gain').grid(row=0, column=2)
+        self.slider_gain3 = Tkinter.Scale(self.frame_se, from_=0, to=300, length=400, variable=gain[3])
+        self.slider_gain3.set(150)
+        self.slider_gain3.grid(row=1, column=2)
 
         self.canvas1_image = None
         self.canvas2_image = None
@@ -209,7 +226,7 @@ class GuiPart:
                     if self.data_id == 2:
                         if self.canvas2_image is not None:
                             self.canvas2.delete(self.canvas2_image)
-                        self.im2 = Image.frombytes('L', (self.data.shape[1],self.data.shape[0]), self.data.astype('b').tostring()).resize((600,450))
+                        self.im2 = Image.frombytes('L', (self.data.shape[1],self.data.shape[0]), self.data.astype('b').tostring()).resize((853,640))
                         self.photo2 = ImageTk.PhotoImage(image=self.im2)
                         self.canvas2.delete('all')
                         self.canvas2_image = self.canvas2.create_image(0,0,image=self.photo2,anchor=Tkinter.NW)
@@ -219,10 +236,10 @@ class GuiPart:
                         y = int(self.crosshair_y.get())
                         
                         self.canvas2.create_line(x, 0, x, y-10, fill='red', width=1)
-                        self.canvas2.create_line(x, y+10, x, 450, fill='red', width=1)
+                        self.canvas2.create_line(x, y+10, x, 640, fill='red', width=1)
 
                         self.canvas2.create_line(0, y, x-10, y, fill='red', width=1)
-                        self.canvas2.create_line(x+10, y, 600, y, fill='red', width=1)
+                        self.canvas2.create_line(x+10, y, 853, y, fill='red', width=1)
 
                         self.config['crosshair'][0] = self.crosshair_x.get()
                         self.config['crosshair'][1] = self.crosshair_y.get()
