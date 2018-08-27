@@ -148,7 +148,7 @@ class GuiPart:
         self.slider_exp2 = Tkinter.Scale(self.frame_w, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time[2], label='Exp time (ms)')
         self.slider_exp2.set(DEFAULT_EXP_TIME)
         self.slider_exp2.grid(row=1, column=0)
-       
+
         self.slider_gain2 = Tkinter.Scale(self.frame_w, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain[2], label='Gain')
         self.slider_gain2.set(150)
         self.slider_gain2.grid(row=2, column=0)
@@ -206,57 +206,63 @@ class GuiPart:
             label.config(text='OFF')
             label.config(background='red')
 
+    def processIncomingImage(self, msg):
+
+        data = msg['image']
+        data_id = msg['id']
+
+        if data_id == 1:
+            if self.canvas1_image is not None:
+                self.canvas1.delete(self.canvas1_image)
+            self.im1 = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring()).resize((600,450))
+            self.photo1 = ImageTk.PhotoImage(image=self.im1)
+            self.canvas1_image = self.canvas1.create_image(0,0,image=self.photo1,anchor=Tkinter.NW)
+
+        if data_id == 2:
+            if self.canvas2_image is not None:
+                self.canvas2.delete(self.canvas2_image)
+            self.im2 = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring()).resize((853,640))
+            self.photo2 = ImageTk.PhotoImage(image=self.im2)
+            self.canvas2.delete('all')
+            self.canvas2_image = self.canvas2.create_image(0,0,image=self.photo2,anchor=Tkinter.NW)
+
+            # draw crosshair
+            x = int(self.crosshair_x.get())
+            y = int(self.crosshair_y.get())
+
+            self.canvas2.create_line(x, 0, x, y-10, fill='red', width=1)
+            self.canvas2.create_line(x, y+10, x, 640, fill='red', width=1)
+
+            self.canvas2.create_line(0, y, x-10, y, fill='red', width=1)
+            self.canvas2.create_line(x+10, y, 853, y, fill='red', width=1)
+
+            self.config['crosshair'][0] = self.crosshair_x.get()
+            self.config['crosshair'][1] = self.crosshair_y.get()
+
+            with open(CONFIG_FILE, 'w') as f:
+                json.dump(self.config, f)
+
+        if data_id == 3:
+            if self.canvas3_image is not None:
+                self.canvas3.delete(self.canvas3_image)
+            self.im3 = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring()).resize((600,450))
+            self.photo3 = ImageTk.PhotoImage(image=self.im3)
+            self.canvas3.delete('all')
+            self.canvas3_image = self.canvas3.create_image(0,0,image=self.photo3,anchor=Tkinter.NW)
+
+    def processIncomingRelayStatus(self, msg):
+        self.changeSwitchLabelStatus(self.thLampSwitchStatus, msg['status'][ETHRLY_TH_LAMP_RELAY])
+
     def processIncoming(self):
         while self.queue.qsize():
             try:
                 self.msg = self.queue.get(0)
 
                 if self.msg['type'] == 'image':
-
-                    self.data = self.msg['image']
-                    self.data_id = self.msg['id']
-
-                    if self.data_id == 1:
-                        if self.canvas1_image is not None:
-                            self.canvas1.delete(self.canvas1_image)
-                        self.im1 = Image.frombytes('L', (self.data.shape[1],self.data.shape[0]), self.data.astype('b').tostring()).resize((600,450))
-                        self.photo1 = ImageTk.PhotoImage(image=self.im1)
-                        self.canvas1_image = self.canvas1.create_image(0,0,image=self.photo1,anchor=Tkinter.NW)
-
-                    if self.data_id == 2:
-                        if self.canvas2_image is not None:
-                            self.canvas2.delete(self.canvas2_image)
-                        self.im2 = Image.frombytes('L', (self.data.shape[1],self.data.shape[0]), self.data.astype('b').tostring()).resize((853,640))
-                        self.photo2 = ImageTk.PhotoImage(image=self.im2)
-                        self.canvas2.delete('all')
-                        self.canvas2_image = self.canvas2.create_image(0,0,image=self.photo2,anchor=Tkinter.NW)
-
-                        # draw crosshair
-                        x = int(self.crosshair_x.get())
-                        y = int(self.crosshair_y.get())
-                        
-                        self.canvas2.create_line(x, 0, x, y-10, fill='red', width=1)
-                        self.canvas2.create_line(x, y+10, x, 640, fill='red', width=1)
-
-                        self.canvas2.create_line(0, y, x-10, y, fill='red', width=1)
-                        self.canvas2.create_line(x+10, y, 853, y, fill='red', width=1)
-
-                        self.config['crosshair'][0] = self.crosshair_x.get()
-                        self.config['crosshair'][1] = self.crosshair_y.get()
-
-                        with open(CONFIG_FILE, 'w') as f:
-                            json.dump(self.config, f)
-
-                    if self.data_id == 3:
-                        if self.canvas3_image is not None:
-                            self.canvas3.delete(self.canvas3_image)
-                        self.im3 = Image.frombytes('L', (self.data.shape[1],self.data.shape[0]), self.data.astype('b').tostring()).resize((600,450))
-                        self.photo3 = ImageTk.PhotoImage(image=self.im3)
-                        self.canvas3.delete('all')
-                        self.canvas3_image = self.canvas3.create_image(0,0,image=self.photo3,anchor=Tkinter.NW)
+                    self.processIncomingImage(self.msg)
 
                 if self.msg['type'] == 'relaystatus':
-                    self.changeSwitchLabelStatus(self.thLampSwitchStatus, self.msg['status'][ETHRLY_TH_LAMP_RELAY])
+                    self.processIncomingRelayStatus(self.msg)
 
             except Queue.Empty:
                 pass
@@ -268,26 +274,26 @@ class ThreadedClient:
         self.master = master
 
         self.queue = Queue.Queue()
-
         self.relay_queue = Queue.Queue()
 
         self.gui = GuiPart(master, self.queue, self.endApplication, self.relay_queue)
 
         self.running = 1
-    	self.thread1 = threading.Thread(target=self.getRemoteImage, args=(1,))
-        self.thread1.start()
 
-    	self.thread2 = threading.Thread(target=self.getRemoteImage, args=(2,))
-        self.thread2.start()
+        self.thread_relay_queue = threading.Thread(target=self.handleRelayQueue)
+        self.thread_relay_queue.start()
 
-    	self.thread3 = threading.Thread(target=self.getRemoteImage, args=(3,))
-        self.thread3.start()
+        self.thread_ethrly_status = threading.Thread(target=self.getEthRlyStatus)
+        self.thread_ethrly_status.start()
 
-    	self.thread4 = threading.Thread(target=self.getEthRlyStatus)
-        self.thread4.start()
+        self.thread_img1 = threading.Thread(target=self.getRemoteImage, args=(1,))
+        self.thread_img1.start()
 
-    	self.thread5 = threading.Thread(target=self.handleRelayQueue)
-        self.thread5.start()
+        self.thread_img2 = threading.Thread(target=self.getRemoteImage, args=(2,))
+        self.thread_img2.start()
+
+        self.thread_img3 = threading.Thread(target=self.getRemoteImage, args=(3,))
+        self.thread_img3.start()
 
         self.periodicCall()
 
