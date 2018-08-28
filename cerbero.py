@@ -227,8 +227,14 @@ class GuiPart:
             self.canvas2_image = self.canvas2.create_image(0,0,image=self.photo2,anchor=Tkinter.NW)
 
             # draw crosshair
-            x = int(self.crosshair_x.get())
-            y = int(self.crosshair_y.get())
+            try:
+                x = int(self.crosshair_x.get())
+            except ValueError:
+                x = 0
+            try:
+                y = int(self.crosshair_y.get())
+            except ValueError:
+                y = 0
 
             self.canvas2.create_line(x, 0, x, y-10, fill='red', width=1)
             self.canvas2.create_line(x, y+10, x, 640, fill='red', width=1)
