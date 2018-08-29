@@ -36,5 +36,5 @@ Edit cerbero.py to specify the ip addresses of the three Raspberry Pi, then laun
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details 
 
