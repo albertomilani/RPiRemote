@@ -10,7 +10,7 @@ Use three Raspberry Pi to stream image from ZWO ccd to a single client.
 
 ## How to use
 ### Raspberry side
-The ZWO SKD is expected to be in
+The ZWO SDK is expected to be in
 ```
 /opt/ASI_SDK/lib/armv7/libASICamera2.so
 ```
