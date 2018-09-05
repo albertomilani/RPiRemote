@@ -6,7 +6,6 @@ import sys
 import os
 import threading
 import time
-import zwoasi as asi
 import json
 from syslog import *
 import argparse
@@ -14,6 +13,16 @@ import argparse
 # exit codes
 EC_CAMERA_NOT_FOUND = 100
 EC_GENERIC_ERROR = 110
+
+class SkyField:
+
+    def __init__(self, w, h):
+        self.w = w
+        self.h = h
+        self.image = numpy.array(numpy.random.random((self.h,self.w))*gain,dtype=numpy.uint8)
+
+    def getImage(self):
+        return self.image
 
 if __name__ == "__main__":
     
@@ -32,6 +41,8 @@ if __name__ == "__main__":
         
         syslog(LOG_INFO, 'Waiting connections...')
 
+        fake_sky = SkyField(1280, 960)
+
         while True:
             conn, addr = sock.accept()
 
@@ -46,7 +57,7 @@ if __name__ == "__main__":
                 pass
 
             try:
-                image = numpy.array(numpy.random.random((960,1280))*gain,dtype=numpy.uint8)
+                image = fake_sky.getImage()
                 im_bytes = image.tobytes()
 
                 chunk_size = 1024
