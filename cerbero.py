@@ -141,20 +141,29 @@ class GuiPart:
         self.slider_gain1.grid(row=1, column=2)
 
 
+        row_num = 0
+
+        self.canvas2_zoom = Tkinter.Canvas(self.frame_w, width=160, height=160)
+        self.canvas2_zoom.grid(row=row_num, column=0, sticky="NW")
+        row_num += 1
 
         self.canvas2 = Tkinter.Canvas(self.frame_w, width=853, height=640)
-        self.canvas2.grid(row=0, column=0, sticky="N")
+        self.canvas2.grid(row=row_num, column=0, sticky="N")
+        row_num += 1
 
         self.slider_exp2 = Tkinter.Scale(self.frame_w, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time[2], label='Exp time (ms)')
         self.slider_exp2.set(DEFAULT_EXP_TIME)
-        self.slider_exp2.grid(row=1, column=0)
+        self.slider_exp2.grid(row=row_num, column=0)
+        row_num += 1
 
         self.slider_gain2 = Tkinter.Scale(self.frame_w, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain[2], label='Gain')
         self.slider_gain2.set(150)
-        self.slider_gain2.grid(row=2, column=0)
+        self.slider_gain2.grid(row=row_num, column=0)
+        row_num += 1
 
         self.frame2 = Tkinter.Frame(self.frame_w)
-        self.frame2.grid(row=3, column=0)
+        self.frame2.grid(row=row_num, column=0)
+        row_num += 1
 
         self.crosshair_x_label = Tkinter.Label(self.frame2, text='Crosshair: x')
         self.crosshair_x_label.grid(row=0, column=0, sticky="W")
@@ -221,6 +230,7 @@ class GuiPart:
         if data_id == 2:
             if self.canvas2_image is not None:
                 self.canvas2.delete(self.canvas2_image)
+            self.im2_orig = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring())
             self.im2 = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring()).resize((853,640))
             self.photo2 = ImageTk.PhotoImage(image=self.im2)
             self.canvas2.delete('all')
@@ -247,6 +257,13 @@ class GuiPart:
 
             with open(CONFIG_FILE, 'w') as f:
                 json.dump(self.config, f)
+
+            # draw cropped zoom (for now use original size)
+            # crop around crosshair center
+            box = (x-82, y-82, x+82, y+82)
+            self.photo2_zoom = ImageTk.PhotoImage(image=self.im2_orig.crop(box))
+            self.canvas2_zoom.delete('all')
+            self.canvas2_image_zoom = self.canvas2_zoom.create_image(0,0,image=self.photo2_zoom,anchor=Tkinter.NW)
 
         if data_id == 3:
             if self.canvas3_image is not None:
