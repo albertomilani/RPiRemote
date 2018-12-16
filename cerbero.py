@@ -1,18 +1,28 @@
 #!/usr/bin/env python
 
-import Tkinter
+import sys
+if sys.version_info[0] < 3:
+    import Tkinter as tk
+    import tkMessageBox as messagebox
+else:
+    import tkinter as tk
+    from tkinter import messagebox
+
+import tkFileDialog
 import time
 import threading
 import random
 import Queue
 import numpy as np
 import socket
-import sys
 import json
 from PIL import Image, ImageTk
 import traceback
 import struct
+import re
 
+SAVE_INIT_PATH = '/home/osservatorio'
+#SAVE_INIT_PATH = '.'
 CONFIG_FILE = '/home/osservatorio/cerbero.conf'
 #CONFIG_FILE = './cerbero.conf'
 
@@ -121,83 +131,111 @@ class GuiPart:
 
         self.master.protocol("WM_DELETE_WINDOW", endCommand)
 
+        # Menubar
+        self.menubar = tk.Menu(self.master)
+        # Submenu File
+        self.filemenu = tk.Menu(self.master, tearoff=0)
+        self.filemenu.add_command(label="Save guide image", command=self.saveGuideImage)
+        self.filemenu.add_command(label="Save field image", command=self.saveFieldImage)
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Exit", command=self.master.quit)
+        self.menubar.add_cascade(label="File", menu=self.filemenu)
+        # Add menu
+        self.master.config(menu=self.menubar)
 
-        self.frame_w = Tkinter.Frame(self.master)
+        # Layout frames
+        self.frame_w = tk.Frame(self.master)
         self.frame_w.grid(row=0, column=0, rowspan=2, sticky="NW")
-        self.frame_ne = Tkinter.Frame(self.master)
+        self.frame_ne = tk.Frame(self.master)
         self.frame_ne.grid(row=0, column=1, sticky="NE")
-        self.frame_se = Tkinter.Frame(self.master)
+        self.frame_se = tk.Frame(self.master)
         self.frame_se.grid(row=1, column=1, sticky="SE")
 
 
-        self.canvas1 = Tkinter.Canvas(self.frame_ne, width=600, height=450)
+        self.canvas1 = tk.Canvas(self.frame_ne, width=600, height=450)
         self.canvas1.grid(row=0, column=0, rowspan=2, sticky="N")
 
-        Tkinter.Label(self.frame_ne, text='Exp time (ms)').grid(row=0, column=1)
-        self.slider_exp1 = Tkinter.Scale(self.frame_ne, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=400, variable=exp_time[1])
+        tk.Label(self.frame_ne, text='Exp time (ms)').grid(row=0, column=1)
+        self.slider_exp1 = tk.Scale(self.frame_ne, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=400, variable=exp_time[1])
         self.slider_exp1.set(DEFAULT_EXP_TIME)
         self.slider_exp1.grid(row=1, column=1)
        
-        Tkinter.Label(self.frame_ne, text='Gain').grid(row=0, column=2)
-        self.slider_gain1 = Tkinter.Scale(self.frame_ne, from_=0, to=300, length=400, variable=gain[1])
+        tk.Label(self.frame_ne, text='Gain').grid(row=0, column=2)
+        self.slider_gain1 = tk.Scale(self.frame_ne, from_=0, to=300, length=400, variable=gain[1])
         self.slider_gain1.set(150)
         self.slider_gain1.grid(row=1, column=2)
 
 
 
-        #self.canvas2 = Tkinter.Canvas(self.frame_w, width=853, height=640)
-        self.canvas2 = Tkinter.Canvas(self.frame_w, width=600, height=600)
+        #self.canvas2 = tk.Canvas(self.frame_w, width=853, height=640)
+        self.canvas2 = tk.Canvas(self.frame_w, width=600, height=600)
         self.canvas2.grid(row=0, column=0, sticky="N")
 
-        self.slider_exp2 = Tkinter.Scale(self.frame_w, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time[2], label='Exp time (ms)')
+        self.slider_exp2 = tk.Scale(self.frame_w, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=tk.HORIZONTAL, variable=exp_time[2], label='Exp time (ms)')
         self.slider_exp2.set(DEFAULT_EXP_TIME)
         self.slider_exp2.grid(row=1, column=0)
 
-        self.slider_gain2 = Tkinter.Scale(self.frame_w, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain[2], label='Gain')
+        self.slider_gain2 = tk.Scale(self.frame_w, from_=0, to=300, length=580, orient=tk.HORIZONTAL, variable=gain[2], label='Gain')
         self.slider_gain2.set(150)
         self.slider_gain2.grid(row=2, column=0)
 
-        self.frame2 = Tkinter.Frame(self.frame_w)
+        self.frame2 = tk.Frame(self.frame_w)
         self.frame2.grid(row=3, column=0)
 
-        self.crosshair_x_label = Tkinter.Label(self.frame2, text='Crosshair: x')
+        self.crosshair_x_label = tk.Label(self.frame2, text='Crosshair: x')
         self.crosshair_x_label.grid(row=0, column=0, sticky="W")
-        self.crosshair_x = Tkinter.Entry(self.frame2)
+        self.crosshair_x = tk.Entry(self.frame2)
         self.crosshair_x.insert(0, self.config['crosshair'][0])
         self.crosshair_x.grid(row=0, column=1, sticky="W")
 
-        self.crosshair_y_label = Tkinter.Label(self.frame2, text='y')
+        self.crosshair_y_label = tk.Label(self.frame2, text='y')
         self.crosshair_y_label.grid(row=0, column=2, sticky="W")
-        self.crosshair_y = Tkinter.Entry(self.frame2)
+        self.crosshair_y = tk.Entry(self.frame2)
         self.crosshair_y.insert(0, self.config['crosshair'][1])
         self.crosshair_y.grid(row=0, column=3, sticky="W")
 
         self.thLampStatus = False
-        self.thLampSwitchOn = Tkinter.Button(self.frame2, text="4-20mA switch ON", command= lambda: self.switchLamp(True))
+        self.thLampSwitchOn = tk.Button(self.frame2, text="4-20mA switch ON", command= lambda: self.switchLamp(True))
         self.thLampSwitchOn.grid(row=1, column=0)
-        self.thLampSwitchOff = Tkinter.Button(self.frame2, text="4-20mA switch OFF", command= lambda: self.switchLamp(False))
+        self.thLampSwitchOff = tk.Button(self.frame2, text="4-20mA switch OFF", command= lambda: self.switchLamp(False))
         self.thLampSwitchOff.grid(row=1, column=1)
-        self.thLampSwitchStatus = Tkinter.Label(self.frame2, text="OFF", background='red', width=5)
+        self.thLampSwitchStatus = tk.Label(self.frame2, text="OFF", background='red', width=5)
         self.thLampSwitchStatus.grid(row=1, column=2)
 
 
 
-        self.canvas3 = Tkinter.Canvas(self.frame_se, width=600, height=450)
+        self.canvas3 = tk.Canvas(self.frame_se, width=600, height=450)
         self.canvas3.grid(row=0, column=0, rowspan=2, sticky="N")
 
-        Tkinter.Label(self.frame_se, text='Exp time (ms)').grid(row=0, column=1)
-        self.slider_exp3 = Tkinter.Scale(self.frame_se, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=400, variable=exp_time[3])
+        tk.Label(self.frame_se, text='Exp time (ms)').grid(row=0, column=1)
+        self.slider_exp3 = tk.Scale(self.frame_se, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=400, variable=exp_time[3])
         self.slider_exp3.set(DEFAULT_EXP_TIME)
         self.slider_exp3.grid(row=1, column=1)
 
-        Tkinter.Label(self.frame_se, text='Gain').grid(row=0, column=2)
-        self.slider_gain3 = Tkinter.Scale(self.frame_se, from_=0, to=300, length=400, variable=gain[3])
+        tk.Label(self.frame_se, text='Gain').grid(row=0, column=2)
+        self.slider_gain3 = tk.Scale(self.frame_se, from_=0, to=300, length=400, variable=gain[3])
         self.slider_gain3.set(150)
         self.slider_gain3.grid(row=1, column=2)
 
         self.canvas1_image = None
         self.canvas2_image = None
         self.canvas3_image = None
+
+    def saveGuideImage(self):
+        file_types = (("PNG files","*.png"), ("JPEG files","*.jpg;*.jpeg"), ("TIFF files","*.tiff"), ("GIF files","*.gif"))
+        filename = tkFileDialog.asksaveasfilename(initialdir=".", title = "Select file", filetypes = file_types)
+        self.saveImage(self.guide_image, filename)
+
+    def saveFieldImage(self):
+        file_types = (("PNG files","*.png"), ("JPEG files","*.jpg;*.jpeg"), ("TIFF files","*.tiff"), ("GIF files","*.gif"))
+        filename = tkFileDialog.asksaveasfilename(initialdir=".", title = "Select file", filetypes = file_types)
+        self.saveImage(self.field_image, filename)
+
+    def saveImage(self, image, filename):
+        if not re.match(r'[\/\w\d\-_\s]*\.(png|jpg|jpeg|gif|tiff)', filename, re.M|re.I):
+            messagebox.showerror("Error", "Invalid file name! \n(allowed file format: png,jpg,jpeg,gif,tiff)")
+            return
+        image.save(filename)
 
     def switchLamp(self, status):
         self.relay_queue.put({'action':'change_status', 'relay_num':ETHRLY_TH_LAMP_RELAY, 'status':status})
@@ -218,18 +256,20 @@ class GuiPart:
         if data_id == 1:
             if self.canvas1_image is not None:
                 self.canvas1.delete(self.canvas1_image)
+            self.field_image = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring())
             self.im1 = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring()).resize((600,450))
             self.photo1 = ImageTk.PhotoImage(image=self.im1)
-            self.canvas1_image = self.canvas1.create_image(0,0,image=self.photo1,anchor=Tkinter.NW)
+            self.canvas1_image = self.canvas1.create_image(0,0,image=self.photo1,anchor=tk.NW)
 
         if data_id == 2:
             if self.canvas2_image is not None:
                 self.canvas2.delete(self.canvas2_image)
+            self.guide_image = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring())
             #self.im2 = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring()).resize((853,640))
             self.im2 = Image.frombytes('L', (data.shape[0],data.shape[1]), np.rot90(data, 3).astype('b').tostring()).resize((450,600))
             self.photo2 = ImageTk.PhotoImage(image=self.im2)
             self.canvas2.delete('all')
-            self.canvas2_image = self.canvas2.create_image(0,0,image=self.photo2,anchor=Tkinter.NW)
+            self.canvas2_image = self.canvas2.create_image(0,0,image=self.photo2,anchor=tk.NW)
 
             # draw crosshair
             try:
@@ -261,7 +301,7 @@ class GuiPart:
             self.im3 = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring()).resize((600,450))
             self.photo3 = ImageTk.PhotoImage(image=self.im3)
             self.canvas3.delete('all')
-            self.canvas3_image = self.canvas3.create_image(0,0,image=self.photo3,anchor=Tkinter.NW)
+            self.canvas3_image = self.canvas3.create_image(0,0,image=self.photo3,anchor=tk.NW)
 
     def processIncomingRelayStatus(self, msg):
         self.changeSwitchLabelStatus(self.thLampSwitchStatus, msg['status'][ETHRLY_TH_LAMP_RELAY])
@@ -379,19 +419,19 @@ class ThreadedClient:
     def endApplication(self):
         self.running = 0
 
-root = Tkinter.Tk()
+root = tk.Tk()
 
 exp_time = {}
 gain = {}
 
-exp_time[1] = Tkinter.IntVar()
-gain[1] = Tkinter.IntVar()
+exp_time[1] = tk.IntVar()
+gain[1] = tk.IntVar()
 
-exp_time[2] = Tkinter.IntVar()
-gain[2] = Tkinter.IntVar()
+exp_time[2] = tk.IntVar()
+gain[2] = tk.IntVar()
 
-exp_time[3] = Tkinter.IntVar()
-gain[3] = Tkinter.IntVar()
+exp_time[3] = tk.IntVar()
+gain[3] = tk.IntVar()
 
 client = ThreadedClient(root)
 root.mainloop()
