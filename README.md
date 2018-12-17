@@ -2,7 +2,7 @@
 
 Remote ZWO ASI120MM controller on Raspberry Pi.
 
-Use three Raspberry Pi to stream image from ZWO ccd to a single client.
+Use three Raspberry Pi to stream image from three ZWO ccds to a single client.
 
 ## Prerequisites
 * Python-zwoasi required - https://github.com/stevemarple/python-zwoasi
