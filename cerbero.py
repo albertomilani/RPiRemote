@@ -21,10 +21,10 @@ import traceback
 import struct
 import re
 
-SAVE_INIT_PATH = '/home/osservatorio'
-#SAVE_INIT_PATH = '.'
-CONFIG_FILE = '/home/osservatorio/cerbero.conf'
-#CONFIG_FILE = './cerbero.conf'
+#SAVE_INIT_PATH = '/home/osservatorio'
+SAVE_INIT_PATH = '.'
+#CONFIG_FILE = '/home/osservatorio/cerbero.conf'
+CONFIG_FILE = './cerbero.conf'
 
 # ASI config
 ASI_ADDRESS = {}
@@ -131,6 +131,10 @@ class GuiPart:
 
         self.master.protocol("WM_DELETE_WINDOW", endCommand)
 
+        # Exported images
+        self.field_image = None
+        self.guide_image = None
+
         # Menubar
         self.menubar = tk.Menu(self.master)
         # Submenu File
@@ -235,7 +239,8 @@ class GuiPart:
         if not re.match(r'[\/\w\d\-_\s]*\.(png|jpg|jpeg|gif|tiff)', filename, re.M|re.I):
             messagebox.showerror("Error", "Invalid file name! \n(allowed file format: png,jpg,jpeg,gif,tiff)")
             return
-        image.save(filename)
+        if filename and image:
+            image.save(filename)
 
     def switchLamp(self, status):
         self.relay_queue.put({'action':'change_status', 'relay_num':ETHRLY_TH_LAMP_RELAY, 'status':status})
