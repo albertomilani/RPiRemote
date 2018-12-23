@@ -9,20 +9,7 @@ import time
 import json
 from syslog import *
 import argparse
-
-# exit codes
-EC_CAMERA_NOT_FOUND = 100
-EC_GENERIC_ERROR = 110
-
-class SkyField:
-
-    def __init__(self, w, h):
-        self.w = w
-        self.h = h
-        self.image = numpy.array(numpy.random.random((self.h,self.w))*gain,dtype=numpy.uint8)
-
-    def getImage(self):
-        return self.image
+from PIL import Image
 
 if __name__ == "__main__":
     
@@ -32,6 +19,10 @@ if __name__ == "__main__":
 
     syslog(LOG_INFO, 'Start server')
 
+    # load image
+    stars_img = Image.open('stars.png')
+    im_arr = numpy.array(stars_img)
+
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -40,8 +31,7 @@ if __name__ == "__main__":
         sock.listen(2)
         
         syslog(LOG_INFO, 'Waiting connections...')
-
-        fake_sky = SkyField(1280, 960)
+        print('Waiting....')
 
         while True:
             conn, addr = sock.accept()
@@ -57,9 +47,11 @@ if __name__ == "__main__":
                 pass
 
             try:
-                image = fake_sky.getImage()
-                im_bytes = image.tobytes()
 
+                im_rand = numpy.random.randint(low=0, high=15, size=1280*960, dtype=numpy.uint8).reshape(960, 1280)
+                final = numpy.add(im_arr, im_rand)
+                final[final > 255] = 255
+                im_bytes = final.tobytes()
                 chunk_size = 1024
                 msg_len = len(im_bytes)
 
@@ -70,16 +62,15 @@ if __name__ == "__main__":
                         end = msg_len
                     conn.sendall(im_bytes[start:end])
             except Exception, e:
+                print(e)
                 pass
 
             conn.close()
 
     except Exception, e:
-        print(e)
         sock.close()
-        print('Generic error')
         syslog(LOG_ERR, 'Generic error')
-        sys.exit(EC_GENERIC_ERROR)
+        sys.exit(1)
 
     sock.close()
 
