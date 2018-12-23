@@ -17,7 +17,7 @@ CONFIG_FILE = './asi_client.conf'
 
 # ASI config
 ASI_ADDRESS = 'localhost'
-ASI_PORT = 10000
+ASI_PORT = 10001
 ASI_X = 1280
 ASI_Y = 960
 ASI_IMG_SIZE = ASI_X * ASI_Y
@@ -30,14 +30,13 @@ DEFAULT_EXP_TIME = 20
 SOCKET_TIMEOUT = 20
 
 class GuiPart:
-    def __init__(self, master, queue, endCommand, relay_queue):
+    def __init__(self, master, queue, endCommand):
 
         with open(CONFIG_FILE) as f:
             self.config = json.load(f)
 
         self.master = master
         self.queue = queue
-        self.relay_queue = relay_queue
 
         self.master.title("ASI client")
         self.master.geometry("630x600")
@@ -51,15 +50,15 @@ class GuiPart:
         self.canvas = Tkinter.Canvas(self.frame_img, width=600, height=450)
         self.canvas.grid(row=0, column=0, rowspan=2, sticky="N")
        
-        self.slider_exp = Tkinter.Scale(self.frame_img, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time[2], label='Exp time (ms)')
+        self.slider_exp = Tkinter.Scale(self.frame_img, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=Tkinter.HORIZONTAL, variable=exp_time, label='Exp time (ms)')
         self.slider_exp.set(DEFAULT_EXP_TIME)
         self.slider_exp.grid(row=1, column=0)
 
-        self.slider_gain = Tkinter.Scale(self.frame_img, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain[2], label='Gain')
+        self.slider_gain = Tkinter.Scale(self.frame_img, from_=0, to=300, length=580, orient=Tkinter.HORIZONTAL, variable=gain, label='Gain')
         self.slider_gain.set(150)
         self.slider_gain.grid(row=2, column=0)
 
-        self.frame_ch = Tkinter.Frame(self.frame_w)
+        self.frame_ch = Tkinter.Frame(self.frame_img)
         self.frame_ch.grid(row=3, column=0)
 
         self.crosshair_x_label = Tkinter.Label(self.frame_ch, text='Crosshair: x')
