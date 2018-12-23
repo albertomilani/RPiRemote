@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function, division
 import sys
 if sys.version_info[0] < 3:
     import Tkinter as tk
@@ -7,7 +8,7 @@ if sys.version_info[0] < 3:
 else:
     import tkinter as tk
     from tkinter import messagebox
-
+import argparse
 import tkFileDialog
 import time
 import threading
@@ -21,10 +22,17 @@ import traceback
 import struct
 import re
 
-#SAVE_INIT_PATH = '/home/osservatorio'
-SAVE_INIT_PATH = '.'
-#CONFIG_FILE = '/home/osservatorio/cerbero.conf'
-CONFIG_FILE = './cerbero.conf'
+parser = argparse.ArgumentParser()
+parser.add_argument("--dev", help="Development environment", action="store_true")
+parser.add_argument("--fake", help="Connect to fake server", action="store_true")
+args = parser.parse_args()
+
+if args.dev:
+    SAVE_INIT_PATH = '.'
+    CONFIG_FILE = './cerbero.conf'
+else:
+    SAVE_INIT_PATH = '/home/osservatorio'
+    CONFIG_FILE = '/home/osservatorio/cerbero.conf'
 
 # ASI config
 ASI_ADDRESS = {}
@@ -53,6 +61,14 @@ ASI_PORT[3] = 10000
 ASI_X[3] = 1280
 ASI_Y[3] = 960
 ASI_IMG_SIZE[3] = ASI_X[3] * ASI_Y[3]
+
+if args.fake:
+    ASI_ADDRESS[1] = 'localhost'
+    ASI_ADDRESS[2] = 'localhost'
+    ASI_ADDRESS[3] = 'localhost'
+    ASI_PORT[1] = 10001
+    ASI_PORT[2] = 10002
+    ASI_PORT[3] = 10003
 
 # millisec
 MIN_EXP_TIME = 1
