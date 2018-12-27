@@ -143,7 +143,7 @@ class GuiPart:
         self.relay_queue = relay_queue
 
         self.master.title("Telecamere terza cupola")
-        self.master.geometry("1650x940")
+        self.master.geometry("1210x940")
 
         self.master.protocol("WM_DELETE_WINDOW", endCommand)
 
@@ -160,6 +160,11 @@ class GuiPart:
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.master.quit)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
+        # Submenu Tools
+        self.toolsmenu = tk.Menu(self.master, tearoff=0)
+        self.toolsmenu.add_command(label="Adjustments", command=self.openAdjustmentsPanel)
+        self.toolsmenu.add_command(label="AutoGuide", command=self.openAutoGuidePanel)
+        self.menubar.add_cascade(label="Tools", menu=self.toolsmenu)
         # Add menu
         self.master.config(menu=self.menubar)
 
@@ -171,79 +176,51 @@ class GuiPart:
         self.frame_se = tk.Frame(self.master)
         self.frame_se.grid(row=1, column=1, sticky="SE")
 
-
+        # Field camera canvas
         self.canvas1 = tk.Canvas(self.frame_ne, width=600, height=450)
         self.canvas1.grid(row=0, column=0, rowspan=2, sticky="N")
 
-        tk.Label(self.frame_ne, text='Exp time (ms)').grid(row=0, column=1)
-        self.slider_exp1 = tk.Scale(self.frame_ne, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=400, variable=exp_time[1])
-        self.slider_exp1.set(DEFAULT_EXP_TIME)
-        self.slider_exp1.grid(row=1, column=1)
-       
-        tk.Label(self.frame_ne, text='Gain').grid(row=0, column=2)
-        self.slider_gain1 = tk.Scale(self.frame_ne, from_=0, to=300, length=400, variable=gain[1])
-        self.slider_gain1.set(150)
-        self.slider_gain1.grid(row=1, column=2)
+        # Top left frame
+        self.frame_w_top = tk.Canvas(self.frame_w)
+        self.frame_w_top.grid(row=0, column=0)
 
-        row_num = 0
+        # Zoom on crosshair center
+        self.canvas2_zoom = tk.Canvas(self.frame_w_top, width=160, height=160)
+        self.canvas2_zoom.grid(row=0, column=0, sticky="NW")
 
-        self.canvas2_zoom = tk.Canvas(self.frame_w, width=160, height=160)
-        self.canvas2_zoom.grid(row=row_num, column=0, sticky="NW")
-        row_num += 1
+        # Controls frame
+        self.frame_w_top_controls = tk.Frame(self.frame_w_top)
+        self.frame_w_top_controls.grid(row=0, column=1)
 
-        #self.canvas2 = tk.Canvas(self.frame_w, width=853, height=640)
-        self.canvas2 = tk.Canvas(self.frame_w, width=600, height=600)
-        self.canvas2.grid(row=row_num, column=0, sticky="N")
-        row_num += 1
-
-        self.slider_exp2 = tk.Scale(self.frame_w, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=580, orient=tk.HORIZONTAL, variable=exp_time[2], label='Exp time (ms)')
-        self.slider_exp2.set(DEFAULT_EXP_TIME)
-        self.slider_exp2.grid(row=row_num, column=0)
-        row_num += 1
-
-        self.slider_gain2 = tk.Scale(self.frame_w, from_=0, to=300, length=580, orient=tk.HORIZONTAL, variable=gain[2], label='Gain')
-        self.slider_gain2.set(150)
-        self.slider_gain2.grid(row=row_num, column=0)
-        row_num += 1
-
-        self.frame2 = tk.Frame(self.frame_w)
-        self.frame2.grid(row=row_num, column=0)
-        row_num += 1
-
-        self.crosshair_x_label = tk.Label(self.frame2, text='Crosshair: x')
+        self.crosshair_x_label = tk.Label(self.frame_w_top_controls, text='Crosshair: x')
         self.crosshair_x_label.grid(row=0, column=0, sticky="W")
-        self.crosshair_x = tk.Entry(self.frame2)
+        self.crosshair_x = tk.Entry(self.frame_w_top_controls, width=5)
         self.crosshair_x.insert(0, self.config['crosshair'][0])
         self.crosshair_x.grid(row=0, column=1, sticky="W")
 
-        self.crosshair_y_label = tk.Label(self.frame2, text='y')
+        self.crosshair_y_label = tk.Label(self.frame_w_top_controls, text='y')
         self.crosshair_y_label.grid(row=0, column=2, sticky="W")
-        self.crosshair_y = tk.Entry(self.frame2)
+        self.crosshair_y = tk.Entry(self.frame_w_top_controls, width=5)
         self.crosshair_y.insert(0, self.config['crosshair'][1])
         self.crosshair_y.grid(row=0, column=3, sticky="W")
 
         self.thLampStatus = False
-        self.thLampSwitchOn = tk.Button(self.frame2, text="4-20mA switch ON", command= lambda: self.switchLamp(True))
+        self.thLampSwitchOn = tk.Button(self.frame_w_top_controls, text="4-20mA switch ON", command= lambda: self.switchLamp(True))
         self.thLampSwitchOn.grid(row=1, column=0)
-        self.thLampSwitchOff = tk.Button(self.frame2, text="4-20mA switch OFF", command= lambda: self.switchLamp(False))
+        self.thLampSwitchOff = tk.Button(self.frame_w_top_controls, text="4-20mA switch OFF", command= lambda: self.switchLamp(False))
         self.thLampSwitchOff.grid(row=1, column=1)
-        self.thLampSwitchStatus = tk.Label(self.frame2, text="OFF", background='red', width=5)
+        self.thLampSwitchStatus = tk.Label(self.frame_w_top_controls, text="OFF", background='red', width=5)
         self.thLampSwitchStatus.grid(row=1, column=2)
 
 
 
+
+        #self.canvas2 = tk.Canvas(self.frame_w, width=853, height=640)
+        self.canvas2 = tk.Canvas(self.frame_w, width=600, height=600)
+        self.canvas2.grid(row=1, column=0, sticky="N")
+
         self.canvas3 = tk.Canvas(self.frame_se, width=600, height=450)
         self.canvas3.grid(row=0, column=0, rowspan=2, sticky="N")
-
-        tk.Label(self.frame_se, text='Exp time (ms)').grid(row=0, column=1)
-        self.slider_exp3 = tk.Scale(self.frame_se, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=400, variable=exp_time[3])
-        self.slider_exp3.set(DEFAULT_EXP_TIME)
-        self.slider_exp3.grid(row=1, column=1)
-
-        tk.Label(self.frame_se, text='Gain').grid(row=0, column=2)
-        self.slider_gain3 = tk.Scale(self.frame_se, from_=0, to=300, length=400, variable=gain[3])
-        self.slider_gain3.set(150)
-        self.slider_gain3.grid(row=1, column=2)
 
         self.canvas1_image = None
         self.canvas2_image = None
@@ -260,6 +237,8 @@ class GuiPart:
         self.saveImage(self.field_image, filename)
 
     def saveImage(self, image, filename):
+        if filename == '':
+            return
         if not re.match(r'[\/\w\d\-_\s]*\.(png|jpg|jpeg|gif|tiff)', filename, re.M|re.I):
             messagebox.showerror("Error", "Invalid file name! \n(allowed file format: png,jpg,jpeg,gif,tiff)")
             return
@@ -268,6 +247,54 @@ class GuiPart:
 
     def switchLamp(self, status):
         self.relay_queue.put({'action':'change_status', 'relay_num':ETHRLY_TH_LAMP_RELAY, 'status':status})
+
+    def openAdjustmentsPanel(self):
+        self.adj_panel = tk.Toplevel()
+        self.adj_panel.geometry("450x400")
+        self.adj_panel.resizable(0, 0)
+        self.adj_panel.title('Camera adjustments')
+
+        self.adj_frame_sx = tk.LabelFrame(self.adj_panel, text="Field")
+        self.adj_frame_cx = tk.LabelFrame(self.adj_panel, text="Spectrograph")
+        self.adj_frame_dx = tk.LabelFrame(self.adj_panel, text="Dome")
+        self.adj_frame_sx.grid(row=0, column=0)
+        self.adj_frame_cx.grid(row=0, column=1)
+        self.adj_frame_dx.grid(row=0, column=2)
+
+
+        tk.Label(self.adj_frame_sx, text='Exp time (ms)').grid(row=0, column=0)
+        self.slider_exp1 = tk.Scale(self.adj_frame_sx, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=350, variable=exp_time[1])
+        self.slider_exp1.set(DEFAULT_EXP_TIME)
+        self.slider_exp1.grid(row=1, column=0)
+       
+        tk.Label(self.adj_frame_sx, text='Gain').grid(row=0, column=1)
+        self.slider_gain1 = tk.Scale(self.adj_frame_sx, from_=0, to=300, length=350, variable=gain[1])
+        self.slider_gain1.set(150)
+        self.slider_gain1.grid(row=1, column=1)
+
+        tk.Label(self.adj_frame_cx, text='Exp time (ms)').grid(row=0, column=0)
+        self.slider_exp2 = tk.Scale(self.adj_frame_cx, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=350, variable=exp_time[2])
+        self.slider_exp2.set(DEFAULT_EXP_TIME)
+        self.slider_exp2.grid(row=1, column=0)
+
+        tk.Label(self.adj_frame_cx, text='Gain').grid(row=0, column=1)
+        self.slider_gain2 = tk.Scale(self.adj_frame_cx, from_=0, to=300, length=350, variable=gain[2])
+        self.slider_gain2.set(150)
+        self.slider_gain2.grid(row=1, column=1)
+
+        tk.Label(self.adj_frame_dx, text='Exp time (ms)').grid(row=0, column=0)
+        self.slider_exp3 = tk.Scale(self.adj_frame_dx, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=350, variable=exp_time[3])
+        self.slider_exp3.set(DEFAULT_EXP_TIME)
+        self.slider_exp3.grid(row=1, column=0)
+
+        tk.Label(self.adj_frame_dx, text='Gain').grid(row=0, column=1)
+        self.slider_gain3 = tk.Scale(self.adj_frame_dx, from_=0, to=300, length=350, variable=gain[3])
+        self.slider_gain3.set(150)
+        self.slider_gain3.grid(row=1, column=1)
+
+
+    def openAutoGuidePanel(self):
+        return
 
     def changeSwitchLabelStatus(self, label, status):
         if status:
