@@ -71,7 +71,7 @@ if args.fake:
     ASI_PORT[3] = 10003
 
 # millisec
-MIN_EXP_TIME = 1
+MIN_EXP_TIME = 20
 MAX_EXP_TIME = 15000
 DEFAULT_EXP_TIME = 20
 
@@ -212,9 +212,6 @@ class GuiPart:
         self.thLampSwitchStatus = tk.Label(self.frame_w_top_controls, text="OFF", background='red', width=5)
         self.thLampSwitchStatus.grid(row=1, column=2)
 
-
-
-
         #self.canvas2 = tk.Canvas(self.frame_w, width=853, height=640)
         self.canvas2 = tk.Canvas(self.frame_w, width=600, height=600)
         self.canvas2.grid(row=1, column=0, sticky="N")
@@ -261,7 +258,6 @@ class GuiPart:
         self.adj_frame_cx.grid(row=0, column=1)
         self.adj_frame_dx.grid(row=0, column=2)
 
-
         tk.Label(self.adj_frame_sx, text='Exp time (ms)').grid(row=0, column=0)
         self.slider_exp1 = tk.Scale(self.adj_frame_sx, from_=MIN_EXP_TIME, to=MAX_EXP_TIME, resolution=10, length=350, variable=exp_time[1])
         self.slider_exp1.set(DEFAULT_EXP_TIME)
@@ -291,7 +287,6 @@ class GuiPart:
         self.slider_gain3 = tk.Scale(self.adj_frame_dx, from_=0, to=300, length=350, variable=gain[3])
         self.slider_gain3.set(150)
         self.slider_gain3.grid(row=1, column=1)
-
 
     def openAutoGuidePanel(self):
         return
@@ -418,6 +413,8 @@ class ThreadedClient:
     def periodicCall(self):
         self.gui.processIncoming()
         if not self.running:
+            while not self.queue.empty() and not self.relay_queue.empty():
+                pass
             sys.exit(1)
         self.master.after(100, self.periodicCall)
 
