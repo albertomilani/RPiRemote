@@ -350,8 +350,10 @@ class GuiPart:
 
             # draw cropped zoom (for now use original size)
             # crop around crosshair center
-            box = (x-82, y-82, x+82, y+82)
-            self.photo2_zoom = ImageTk.PhotoImage(image=self.im2_orig.crop(box))
+            x_zoom = 960 - int(x*2.133)
+            y_zoom = int(y*2.133)
+            box = (y_zoom-82, x_zoom-82, y_zoom+82, x_zoom+82)
+            self.photo2_zoom = ImageTk.PhotoImage(image=self.im2_orig.crop(box).rotate(270))
             self.canvas2_zoom.delete('all')
             self.canvas2_image_zoom = self.canvas2_zoom.create_image(0,0,image=self.photo2_zoom,anchor=tk.NW)
 
