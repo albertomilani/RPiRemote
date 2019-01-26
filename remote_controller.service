@@ -1,0 +1,11 @@
+[Unit]
+Description=Remote controller
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/remote_controller.py
+ExecStop=kill -TERM $(ps ax | grep remote_controller.py | head -1 | awk '{print $1}')
+Restart=Always
+
+[Install]
+WantedBy=default.target
