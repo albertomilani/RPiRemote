@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/local/bin/asi_server.py
-ExecStop=killall pythton
+ExecStop=kill -TERM $(ps ax | grep asi_server.py | head -1 | awk '{print $1}')
 Restart=Always
 
 [Install]
