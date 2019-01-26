@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/local/bin/remote_controller.py
-ExecStop=kill -TERM $(ps ax | grep remote_controller.py | head -1 | awk '{print $1}')
+ExecStop=/bin/kill -TERM $(/bin/ps ax | /bin/grep remote_controller | /usr/bin/head -1 | /usr/bin/awk '{print $1}')
 Restart=Always
 
 [Install]
