@@ -158,7 +158,7 @@ class GuiPart:
         self.filemenu.add_command(label="Save guide image", command=self.saveGuideImage)
         self.filemenu.add_command(label="Save field image", command=self.saveFieldImage)
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Exit", command=self.master.quit)
+        self.filemenu.add_command(label="Exit", command=endCommand)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
         # Submenu Tools
         self.toolsmenu = tk.Menu(self.master, tearoff=0)
