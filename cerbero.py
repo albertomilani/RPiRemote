@@ -21,6 +21,7 @@ from PIL import Image, ImageTk
 import traceback
 import struct
 import re
+import scipy.signal
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dev", help="Development environment", action="store_true")
@@ -150,6 +151,7 @@ class GuiPart:
         # Exported images
         self.field_image = None
         self.guide_image = None
+        self.dome_image = None
 
         # Menubar
         self.menubar = tk.Menu(self.master)
@@ -157,13 +159,14 @@ class GuiPart:
         self.filemenu = tk.Menu(self.master, tearoff=0)
         self.filemenu.add_command(label="Save guide image", command=self.saveGuideImage)
         self.filemenu.add_command(label="Save field image", command=self.saveFieldImage)
+        self.filemenu.add_command(label="Save dome image", command=self.saveDomeImage)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=endCommand)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
         # Submenu Tools
         self.toolsmenu = tk.Menu(self.master, tearoff=0)
         self.toolsmenu.add_command(label="Adjustments", command=self.openAdjustmentsPanel)
-        self.toolsmenu.add_command(label="AutoGuide", command=self.openAutoGuidePanel)
+        #self.toolsmenu.add_command(label="AutoGuide", command=self.openAutoGuidePanel)
         self.menubar.add_cascade(label="Tools", menu=self.toolsmenu)
         # Add menu
         self.master.config(menu=self.menubar)
@@ -232,6 +235,11 @@ class GuiPart:
         file_types = (("PNG files","*.png"), ("JPEG files","*.jpg;*.jpeg"), ("TIFF files","*.tiff"), ("GIF files","*.gif"))
         filename = tkFileDialog.asksaveasfilename(initialdir=".", title = "Select file", filetypes = file_types)
         self.saveImage(self.field_image, filename)
+
+    def saveDomeImage(self):
+        file_types = (("PNG files","*.png"), ("JPEG files","*.jpg;*.jpeg"), ("TIFF files","*.tiff"), ("GIF files","*.gif"))
+        filename = tkFileDialog.asksaveasfilename(initialdir=".", title = "Select file", filetypes = file_types)
+        self.saveImage(self.dome_image, filename)
 
     def saveImage(self, image, filename):
         if filename == '':
@@ -360,6 +368,8 @@ class GuiPart:
         if data_id == 3:
             if self.canvas3_image is not None:
                 self.canvas3.delete(self.canvas3_image)
+            data = scipy.signal.medfilt2d(data, 3)
+            self.dome_image = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring())
             self.im3 = Image.frombytes('L', (data.shape[1],data.shape[0]), data.astype('b').tostring()).resize((600,450))
             self.photo3 = ImageTk.PhotoImage(image=self.im3)
             self.canvas3.delete('all')
