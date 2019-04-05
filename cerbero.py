@@ -22,6 +22,10 @@ import traceback
 import struct
 import re
 import scipy.signal
+import subprocess
+import tempfile
+import string
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dev", help="Development environment", action="store_true")
@@ -166,6 +170,8 @@ class GuiPart:
         # Submenu Tools
         self.toolsmenu = tk.Menu(self.master, tearoff=0)
         self.toolsmenu.add_command(label="Adjustments", command=self.openAdjustmentsPanel)
+        self.toolsmenu.add_separator()
+        self.toolsmenu.add_command(label="Astrometry", command=self.openAstrometryPanel)	
         #self.toolsmenu.add_command(label="AutoGuide", command=self.openAutoGuidePanel)
         self.menubar.add_cascade(label="Tools", menu=self.toolsmenu)
         # Add menu
@@ -295,6 +301,29 @@ class GuiPart:
         self.slider_gain3 = tk.Scale(self.adj_frame_dx, from_=0, to=300, length=350, variable=gain[3])
         self.slider_gain3.set(150)
         self.slider_gain3.grid(row=1, column=1)
+
+    def openAstrometryPanel(self):
+        self.astro_panel = tk.Toplevel()
+        self.astro_panel.geometry("800x600")
+        self.astro_panel.resizable(0, 0)
+        self.astro_panel.title("Astrometry")
+
+        self.astro_panel_solve_button = tk.Button(self.astro_panel, text='Solve astrometry', command=self.solveAstrometry)
+        self.astro_panel_solve_button.pack()
+
+        self.astro_panel_text = tk.Text(self.astro_panel)
+        self.astro_panel_text.pack(fill=tk.BOTH)
+
+    def solveAstrometry(self):
+        tmpfile = tempfile.NamedTemporaryFile(delete=True)
+        img_filename = tmpfile.name + '.png'
+        self.saveImage(self.field_image, img_filename)
+        exec_path = '/usr/local/astrometry/bin/solve-field'
+        rnd_basename = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
+        command = [exec_path, '-w', 'am', '-L', '0.1', '-H', '20', '-z', '2', '--cpulimit', '30', '-o', rnd_basename, '-O', '-p', '-D', '/tmp', img_filename]
+        out = subprocess.check_output(command, stderr=subprocess.STDOUT)
+        print(out)
+        #self.astro_panel_text.insert(out)
 
     def openAutoGuidePanel(self):
         return
