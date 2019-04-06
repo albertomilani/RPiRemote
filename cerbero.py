@@ -308,11 +308,20 @@ class GuiPart:
         self.astro_panel.resizable(0, 0)
         self.astro_panel.title("Astrometry")
 
-        self.astro_panel_solve_button = tk.Button(self.astro_panel, text='Solve astrometry', command=self.solveAstrometry)
-        self.astro_panel_solve_button.pack()
+        self.astro_panel_scrollbar = tk.Scrollbar(self.astro_panel)
+        self.astro_panel_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.astro_panel_text = tk.Text(self.astro_panel)
-        self.astro_panel_text.pack(fill=tk.BOTH)
+        self.astro_panel_text = tk.Text(self.astro_panel, wrap=tk.WORD)
+        self.astro_panel_text.pack(side=tk.TOP, fill=tk.X)
+
+        self.astro_panel_text.config(yscrollcommand=self.astro_panel_scrollbar.set)
+        self.astro_panel_scrollbar.config(command=self.astro_panel_text.yview)
+
+        self.astro_panel_bottom_frame = tk.Frame(self.astro_panel)
+        self.astro_panel_bottom_frame.pack(side=tk.BOTTOM)
+
+        self.astro_panel_solve_button = tk.Button(self.astro_panel_bottom_frame, text='Solve astrometry', command=self.solveAstrometry)
+        self.astro_panel_solve_button.grid(row=0, column=0)
 
     def solveAstrometry(self):
         tmpfile = tempfile.NamedTemporaryFile(delete=True)
@@ -322,8 +331,7 @@ class GuiPart:
         rnd_basename = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
         command = [exec_path, '-w', 'am', '-L', '0.1', '-H', '20', '-z', '2', '--cpulimit', '30', '-o', rnd_basename, '-O', '-p', '-D', '/tmp', img_filename]
         out = subprocess.check_output(command, stderr=subprocess.STDOUT)
-        print(out)
-        #self.astro_panel_text.insert(out)
+        self.astro_panel_text.insert(tk.END, out)
 
     def openAutoGuidePanel(self):
         return
